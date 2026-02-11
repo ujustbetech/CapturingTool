@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { db } from '../../firebaseConfig';
 import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
+import { format } from 'date-fns';
+import Swal from 'sweetalert2';
 
 const EventLoginPage = () => {
   const router = useRouter();
@@ -13,8 +15,6 @@ const EventLoginPage = () => {
   const [registeredUserCount, setRegisteredUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
   const [flatNo, setFlatNo] = useState('');
   const [wing, setWing] = useState('');
 
@@ -51,9 +51,7 @@ const EventLoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
 
-    // ✅ Proper Validation
     if (!userName.trim()) {
       setError('Please enter your full name.');
       return;
@@ -93,11 +91,17 @@ const EventLoginPage = () => {
         phoneNumber,
         flatNo,
         wing,
-        builder: eventDetails.builder, // ✅ Auto from event
+        builder: eventDetails.builder,
         registeredAt: new Date(),
       });
 
-      setSuccess('Thank you! Your response has been recorded.');
+      Swal.fire({
+        icon: 'success',
+        title: 'Thank You!',
+        text: 'Thank you for registering.',
+        confirmButtonColor: '#16274f',
+        confirmButtonText: 'OK'
+      });
 
       setUserName('');
       setPhoneNumber('');
@@ -108,9 +112,36 @@ const EventLoginPage = () => {
 
     } catch (err) {
       console.error(err);
-      setError('Error submitting form. Please try again.');
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Something went wrong. Please try again.',
+        confirmButtonColor: '#c62828'
+      });
     }
   };
+
+  const formattedDate = eventDetails?.startTime?.seconds
+    ? format(
+        new Date(eventDetails.startTime.seconds * 1000),
+        'EEEE, dd/MM/yy'
+      )
+    : '';
+
+  const formattedStartTime = eventDetails?.startTime?.seconds
+    ? format(
+        new Date(eventDetails.startTime.seconds * 1000),
+        'hh:mm a'
+      )
+    : '';
+
+  const formattedEndTime = eventDetails?.endTime?.seconds
+    ? format(
+        new Date(eventDetails.endTime.seconds * 1000),
+        'hh:mm a'
+      )
+    : '';
 
   return (
     <section className="feedbackContainer">
@@ -122,6 +153,37 @@ const EventLoginPage = () => {
         <h2 className="feedback-form-title">
           {eventDetails?.name || 'Event'}
         </h2>
+
+{formattedDate && (
+  <div style={{
+    textAlign: 'center',
+    marginBottom: '25px',
+    padding: '15px 20px',
+    borderRadius: '12px',
+    background: 'linear-gradient(135deg, #f8f9ff, #eef2ff)',
+    border: '1px solid #e0e6ff',
+    fontSize: '14px',
+    color: '#444',
+    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.05)'
+  }}>
+    <div style={{
+      fontWeight: '600',
+      fontSize: '15px',
+      color: '#16274f',
+      marginBottom: '4px'
+    }}>
+      {formattedDate}
+    </div>
+
+    <div style={{
+      fontSize: '13px',
+      color: '#666',
+      letterSpacing: '0.5px'
+    }}>
+      {formattedStartTime} - {formattedEndTime}
+    </div>
+  </div>
+)}
 
         <form onSubmit={handleSubmit}>
 
@@ -169,7 +231,6 @@ const EventLoginPage = () => {
             />
           </div>
 
-          {/* ✅ Auto Display Builder */}
           <div className="input-group">
             <label>Builder</label>
             <input
@@ -194,7 +255,6 @@ const EventLoginPage = () => {
           )}
 
           {error && <p style={{ color: 'red' }}>{error}</p>}
-          {success && <p style={{ color: 'green' }}>{success}</p>}
 
         </form>
       </div>
