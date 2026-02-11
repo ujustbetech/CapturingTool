@@ -60,7 +60,7 @@ const payload = {
 
         try {
           const res = await axios.post(
-            "https://graph.facebook.com/v19.0/712485631939049/messages",
+            "https://graph.facebook.com/v22.0/527476310441806/messages",
             payload,
             {
               headers: {

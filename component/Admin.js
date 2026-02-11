@@ -32,25 +32,22 @@ const CreateEvent = () => {
       const uniqueId = doc(eventRef).id;
       const eventDocRef = doc(eventRef, uniqueId);
 
-      // ✅ Save event details
       await setDoc(eventDocRef, {
-        name: eventName,
+        name: eventName,   // Builder name stored as event name
+        builder: eventName,
         startTime: Timestamp.fromDate(new Date(eventStartTime)),
         endTime: Timestamp.fromDate(new Date(eventEndTime)),
         uniqueId: uniqueId,
       });
 
-      // ✅ Generate QR code for event link
       const eventLink = `${window.location.origin}/events/${uniqueId}`;
       const qrImageData = await QRCode.toDataURL(eventLink);
 
-      // ✅ Upload QR code to Firebase Storage
       const qrRef = ref(storage, `qrcodes/${uniqueId}.png`);
       await uploadString(qrRef, qrImageData, 'data_url');
 
       const qrDownloadUrl = await getDownloadURL(qrRef);
 
-      // ✅ Save QR URL
       await setDoc(eventDocRef, {
         qrCodeUrl: qrDownloadUrl,
       }, { merge: true });
@@ -78,16 +75,25 @@ const CreateEvent = () => {
       <form onSubmit={handleCreateEvent}>
         <ul>
 
+          {/* ✅ Event Name Dropdown */}
           <li className='form-row'>
             <h4>Event Name<sup>*</sup></h4>
             <div className='multipleitem'>
-              <input
-                type="text"
-                placeholder="Event Name"
+              <select
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
                 required
-              />
+              >
+                <option value="">-- Select Builder --</option>
+                <option value="Lloyds Realty Developers Ltd">Lloyds Realty Developers Ltd</option>
+                <option value="JE & VEE Infrastructure">JE & VEE Infrastructure</option>
+                <option value="Navish Realty">Navish Realty</option>
+                <option value="Right Channel Constructions">Right Channel Constructions</option>
+                <option value="Shree Naman Developers Pvt Ltd">Shree Naman Developers Pvt Ltd</option>
+                <option value="Sahakar Global Ltd">Sahakar Global Ltd</option>
+                <option value="Evershine Builders Pvt Ltd">Evershine Builders Pvt Ltd</option>
+                <option value="Ashwin Sheth Group">Ashwin Sheth Group</option>
+              </select>
             </div>
           </li>
 

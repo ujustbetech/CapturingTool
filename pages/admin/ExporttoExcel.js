@@ -16,14 +16,14 @@ const ExportToExcel = ({ eventId }) => {
         return;
       }
 
-      // ✅ Get event name (for file naming)
+      // ✅ Get event name for file naming
       const eventRef = doc(db, 'LeadCapture', eventId);
       const eventSnap = await getDoc(eventRef);
       const eventName = eventSnap.exists()
         ? eventSnap.data().name || 'Event'
         : 'Event';
 
-      // ✅ Correct collection path
+      // ✅ Get registered users
       const registeredUsersCollection = collection(
         db,
         `LeadCapture/${eventId}/registeredUsers`
@@ -37,9 +37,38 @@ const ExportToExcel = ({ eventId }) => {
         return;
       }
 
-      // ✅ Prepare data for Excel
-      const data = snapshot.docs.map((docSnap, index) => {
+      // ✅ Convert to array and sort by latest first
+      const sortedDocs = snapshot.docs.sort((a, b) => {
+        const dateA = a.data().registeredAt?.seconds || 0;
+        const dateB = b.data().registeredAt?.seconds || 0;
+        return dateB - dateA; // latest first
+      });
+
+      // ✅ Prepare data
+      const data = sortedDocs.map((docSnap, index) => {
         const d = docSnap.data();
+
+        let formattedDate = '';
+
+        if (d.registeredAt) {
+          const date = d.registeredAt.toDate();
+
+          const day = date.toLocaleDateString('en-GB', {
+            weekday: 'short'
+          });
+
+          const dateParts = date.toLocaleDateString('en-GB').split('/');
+          const shortYear = dateParts[2].slice(-2);
+
+          const finalDate = `${dateParts[0]}/${dateParts[1]}/${shortYear}`;
+
+          const time = date.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          formattedDate = `${day}, ${finalDate} ${time}`;
+        }
 
         return {
           SrNo: index + 1,
@@ -48,19 +77,17 @@ const ExportToExcel = ({ eventId }) => {
           FlatNo: d.flatNo || '',
           Wing: d.wing || '',
           Builder: d.builder || '',
-          RegisteredAt: d.registeredAt
-            ? d.registeredAt.toDate().toLocaleString()
-            : '',
+          RegisteredAt: formattedDate,
         };
       });
 
-      // ✅ Create worksheet
+      // ✅ Create Excel sheet
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Registered Users');
 
-      // ✅ Dynamic file name
-      const today = new Date().toISOString().slice(0, 10);
+      // ✅ File name with today date
+      const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
       const fileName = `${eventName.replace(/\s+/g, '_')}_${today}.xlsx`;
 
       XLSX.writeFile(workbook, fileName);
@@ -78,9 +105,17 @@ const ExportToExcel = ({ eventId }) => {
   return (
     <div>
       <button
-        className="m-button-7"
         onClick={fetchDataAndExport}
         disabled={loading}
+        style={{
+          padding: '8px 16px',
+          borderRadius: '20px',
+          border: 'none',
+          cursor: 'pointer',
+          backgroundColor: loading ? '#ccc' : '#e8f5e9',
+          color: '#2e7d32',
+          fontWeight: '500'
+        }}
       >
         {loading ? 'Exporting...' : 'Download XLS'}
       </button>

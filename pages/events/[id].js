@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { db } from '../../firebaseConfig';
-import axios from 'axios';
 import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
-
 
 const EventLoginPage = () => {
   const router = useRouter();
@@ -11,7 +9,6 @@ const EventLoginPage = () => {
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [userName, setUserName] = useState('');
-  const [selectedBuilder, setSelectedBuilder] = useState('');
   const [eventDetails, setEventDetails] = useState(null);
   const [registeredUserCount, setRegisteredUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -56,8 +53,29 @@ const EventLoginPage = () => {
     setError('');
     setSuccess('');
 
-    if (!userName || !phoneNumber || !flatNo || !wing || !selectedBuilder) {
-      setError('Please fill all fields and select a builder.');
+    // ✅ Proper Validation
+    if (!userName.trim()) {
+      setError('Please enter your full name.');
+      return;
+    }
+
+    if (!/^[0-9]{10}$/.test(phoneNumber)) {
+      setError('Please enter valid 10 digit phone number.');
+      return;
+    }
+
+    if (!flatNo.trim()) {
+      setError('Please enter flat number.');
+      return;
+    }
+
+    if (!wing.trim()) {
+      setError('Please enter wing.');
+      return;
+    }
+
+    if (!eventDetails?.builder) {
+      setError('Event builder not found.');
       return;
     }
 
@@ -75,7 +93,7 @@ const EventLoginPage = () => {
         phoneNumber,
         flatNo,
         wing,
-        builder: selectedBuilder,
+        builder: eventDetails.builder, // ✅ Auto from event
         registeredAt: new Date(),
       });
 
@@ -85,39 +103,8 @@ const EventLoginPage = () => {
       setPhoneNumber('');
       setFlatNo('');
       setWing('');
-      setSelectedBuilder('');
 
       fetchRegisteredUserCount();
-
-      // ✅ WhatsApp Template Message
-      await axios.post(
-        `https://graph.facebook.com/v19.0/712485631939049/messages`,
-        {
-          messaging_product: "whatsapp",
-          to: phoneNumber,
-          type: "template",
-          template: {
-            name: "oremeet_thankyoumessage",
-            language: { code: "en" },
-            components: [
-              {
-                type: "body",
-                parameters: [
-                  { type: "text", text: userName },
-                  { type: "text", text: eventDetails?.name || "the event" },
-                  { type: "text", text: selectedBuilder }
-                ]
-              }
-            ]
-          }
-        },
-        {
-          headers: {
-            Authorization: `Bearer YOUR_ACCESS_TOKEN`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
 
     } catch (err) {
       console.error(err);
@@ -182,25 +169,14 @@ const EventLoginPage = () => {
             />
           </div>
 
-          {/* ✅ Builder Dropdown */}
+          {/* ✅ Auto Display Builder */}
           <div className="input-group">
-            <label>Select Builder</label>
-            <select
-              value={selectedBuilder}
-              onChange={(e) => setSelectedBuilder(e.target.value)}
-              disabled={isEventEnded}
-              required
-            >
-              <option value="">-- Select Builder --</option>
-              <option value="Lloyds Realty Developers Ltd">Lloyds Realty Developers Ltd</option>
-              <option value="JE & VEE Infrastructure">JE & VEE Infrastructure</option>
-              <option value="Navish Realty">Navish Realty</option>
-              <option value="Right Channel Constructions">Right Channel Constructions</option>
-              <option value="Shree Naman Developers Pvt Ltd">Shree Naman Developers Pvt Ltd</option>
-              <option value="Sahakar Global Ltd">Sahakar Global Ltd</option>
-              <option value="Evershine Builders Pvt Ltd">Evershine Builders Pvt Ltd</option>
-              <option value="Ashwin Sheth Group">Ashwin Sheth Group</option>
-            </select>
+            <label>Builder</label>
+            <input
+              type="text"
+              value={eventDetails?.builder || ''}
+              disabled
+            />
           </div>
 
           <button

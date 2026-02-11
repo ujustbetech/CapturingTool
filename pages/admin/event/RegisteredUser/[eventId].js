@@ -3,8 +3,6 @@ import { db } from '../../../../firebaseConfig';
 import { collection, getDocs, doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { useRouter } from 'next/router';
 import Layout from '../../../../component/Layout';
-
-import axios from 'axios';
 import ExportToExcel from '../../../admin/ExporttoExcel';
 
 const RegisteredUsers = () => {
@@ -15,12 +13,11 @@ const RegisteredUsers = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // ✅ Admin form state
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [flatNo, setFlatNo] = useState('');
   const [wing, setWing] = useState('');
-  const [selectedBuilder, setSelectedBuilder] = useState('');
+  const [eventBuilder, setEventBuilder] = useState('');
   const [eventName, setEventName] = useState('');
 
   useEffect(() => {
@@ -32,16 +29,21 @@ const RegisteredUsers = () => {
         const eventSnap = await getDoc(eventRef);
         if (eventSnap.exists()) {
           const data = eventSnap.data();
-          setEventName(data.name || 'LeadCapture');
+          setEventName(data.name || '');
+          setEventBuilder(data.builder || data.name || '');
         }
       } catch (err) {
-        console.error('Error fetching event:', err);
+        console.error(err);
       }
     };
 
     const fetchRegisteredUsers = async () => {
       try {
-        const registeredUsersCollection = collection(db, `LeadCapture/${eventId}/registeredUsers`);
+        const registeredUsersCollection = collection(
+          db,
+          `LeadCapture/${eventId}/registeredUsers`
+        );
+
         const snapshot = await getDocs(registeredUsersCollection);
 
         const users = snapshot.docs.map((docSnap, index) => {
@@ -54,13 +56,14 @@ const RegisteredUsers = () => {
             flatNo: data.flatNo || 'N/A',
             wing: data.wing || 'N/A',
             builder: data.builder || 'N/A',
-            registeredAt: data.registeredAt?.toDate().toLocaleString() || 'N/A',
+            registeredAt:
+              data.registeredAt?.toDate().toLocaleString() || 'N/A',
           };
         });
 
         setRegisteredUsers(users);
       } catch (err) {
-        console.error('Error fetching registered users:', err);
+        console.error(err);
         setError('Failed to fetch users.');
       }
     };
@@ -74,21 +77,47 @@ const RegisteredUsers = () => {
     setError('');
     setSuccess('');
 
-    if (!name || !phoneNumber || !flatNo || !wing || !selectedBuilder) {
-      setError('Please fill all fields and select a builder.');
+    // ✅ Validation
+    if (!name.trim()) {
+      setError('Please enter name.');
+      return;
+    }
+
+    if (!/^[0-9]{10}$/.test(phoneNumber)) {
+      setError('Enter valid 10 digit phone number.');
+      return;
+    }
+
+    if (!flatNo.trim()) {
+      setError('Please enter flat number.');
+      return;
+    }
+
+    if (!wing.trim()) {
+      setError('Please enter wing.');
+      return;
+    }
+
+    if (!eventBuilder) {
+      setError('Event builder not found.');
       return;
     }
 
     try {
-      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
-      const userRef = doc(db, 'LeadCapture', eventId, 'registeredUsers', phoneNumber);
+      const userRef = doc(
+        db,
+        'LeadCapture',
+        eventId,
+        'registeredUsers',
+        phoneNumber
+      );
 
       await setDoc(userRef, {
         name,
         phoneNumber,
         flatNo,
         wing,
-        builder: selectedBuilder,
+        builder: eventBuilder,  // ✅ Auto builder
         registeredAt: Timestamp.now(),
       });
 
@@ -98,41 +127,10 @@ const RegisteredUsers = () => {
       setPhoneNumber('');
       setFlatNo('');
       setWing('');
-      setSelectedBuilder('');
-
-      // ✅ WhatsApp Template
-      await axios.post(
-        `https://graph.facebook.com/v19.0/712485631939049/messages`,
-        {
-          messaging_product: "whatsapp",
-          to: formattedPhone,
-          type: "template",
-          template: {
-            name: "oremeet_thankyoumessage",
-            language: { code: "en" },
-            components: [
-              {
-                type: "body",
-                parameters: [
-                  { type: "text", text: name },
-                  { type: "text", text: eventName || "LeadCapture" },
-                  { type: "text", text: selectedBuilder }
-                ]
-              }
-            ]
-          }
-        },
-        {
-          headers: {
-            Authorization: `Bearer YOUR_ACCESS_TOKEN`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
 
     } catch (err) {
-      console.error("Submit or WhatsApp error:", err.response?.data || err.message);
-      setError('Error submitting or sending message.');
+      console.error(err);
+      setError('Error submitting user.');
     }
   };
 
@@ -140,7 +138,12 @@ const RegisteredUsers = () => {
     <Layout>
       <section className='c-userslist box'>
 
-        <div className="header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="header-row" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <h3>{eventName}</h3>
           <ExportToExcel eventId={eventId} />
         </div>
 
@@ -156,45 +159,58 @@ const RegisteredUsers = () => {
 
               <li className='form-row'>
                 <h4>Person Name *</h4>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
               </li>
 
               <li className='form-row'>
                 <h4>Phone *</h4>
-                <input type="text" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
+                <input
+                  type="text"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  required
+                />
               </li>
 
               <li className='form-row'>
                 <h4>Flat No *</h4>
-                <input type="text" value={flatNo} onChange={(e) => setFlatNo(e.target.value)} required />
+                <input
+                  type="text"
+                  value={flatNo}
+                  onChange={(e) => setFlatNo(e.target.value)}
+                  required
+                />
               </li>
 
               <li className='form-row'>
                 <h4>Wing *</h4>
-                <input type="text" value={wing} onChange={(e) => setWing(e.target.value)} required />
-              </li>
-
-              <li className='form-row'>
-                <h4>Select Builder *</h4>
-                <select
-                  value={selectedBuilder}
-                  onChange={(e) => setSelectedBuilder(e.target.value)}
+                <input
+                  type="text"
+                  value={wing}
+                  onChange={(e) => setWing(e.target.value)}
                   required
-                >
-                  <option value="">-- Select Builder --</option>
-                  <option value="Lloyds Realty Developers Ltd">Lloyds Realty Developers Ltd</option>
-                  <option value="JE & VEE Infrastructure">JE & VEE Infrastructure</option>
-                  <option value="Navish Realty">Navish Realty</option>
-                  <option value="Right Channel Constructions">Right Channel Constructions</option>
-                  <option value="Shree Naman Developers Pvt Ltd">Shree Naman Developers Pvt Ltd</option>
-                  <option value="Sahakar Global Ltd">Sahakar Global Ltd</option>
-                  <option value="Evershine Builders Pvt Ltd">Evershine Builders Pvt Ltd</option>
-                  <option value="Ashwin Sheth Group">Ashwin Sheth Group</option>
-                </select>
+                />
+              </li>
+
+              {/* ✅ Auto Builder Display */}
+              <li className='form-row'>
+                <h4>Builder</h4>
+                <input
+                  type="text"
+                  value={eventBuilder}
+                  disabled
+                />
               </li>
 
               <li className='form-row'>
-                <button type="submit" className="submitbtn">Add User</button>
+                <button type="submit" className="submitbtn">
+                  Add User
+                </button>
               </li>
 
             </ul>
@@ -230,7 +246,9 @@ const RegisteredUsers = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="7">No users registered for this event.</td>
+                <td colSpan="7">
+                  No users registered for this event.
+                </td>
               </tr>
             )}
           </tbody>

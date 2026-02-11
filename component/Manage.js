@@ -8,163 +8,222 @@ import { CiEdit } from "react-icons/ci";
 import { GrFormView } from "react-icons/gr";
 
 const ManageEvents = () => {
-    const router = useRouter();
-    const [events, setEvents] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+  const router = useRouter();
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-    // Fetch all events from the 'monthlymeet' collection
-    useEffect(() => {
-        const fetchEvents = async () => {
-            try {
-                const eventCollection = collection(db, 'LeadCapture');
-                const eventSnapshot = await getDocs(eventCollection);
-                const eventList = eventSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setEvents(eventList);
-            } catch (error) {
-                console.error('Error fetching events:', error);
-                setError('Error fetching events. Please try again.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchEvents();
-    }, []);
-
-    const handleViewUsers = (eventId) => {
-        router.push(`/admin/event/RegisteredUser/${eventId}`);
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const eventCollection = collection(db, 'LeadCapture');
+        const eventSnapshot = await getDocs(eventCollection);
+        const eventList = eventSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setEvents(eventList);
+      } catch (error) {
+        console.error(error);
+        setError('Error fetching events.');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const handleEditEvent = (eventId) => {
-        router.push(`/admin/event/edit/${eventId}`); // Navigate to edit page
-    };
+    fetchEvents();
+  }, []);
 
-    const handleDeleteEvent = async (eventId) => {
-        try {
-            await deleteDoc(doc(db, 'LeadCapture', eventId));
-            setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
-            alert('Event deleted successfully!');
-        } catch (error) {
-            console.error('Error deleting event:', error);
-            setError('Error deleting event. Please try again.');
-        }
-    };
+  const handleViewUsers = (eventId) => {
+    router.push(`/admin/event/RegisteredUser/${eventId}`);
+  };
 
-   const handleCopyEventLink = (eventId) => {
-  if (typeof window === "undefined") return;
+  const handleEditEvent = (eventId) => {
+    router.push(`/admin/event/edit/${eventId}`);
+  };
+const handleDeleteEvent = async (eventId, eventName) => {
+  const confirmDelete = window.confirm(
+    `Are you sure you want to delete "${eventName}"?\n\nThis action cannot be undone.`
+  );
 
-  const baseUrl = window.location.origin; 
-  const eventLink = `${baseUrl}/events/${eventId}`;
+  if (!confirmDelete) return;
 
-  navigator.clipboard.writeText(eventLink)
-    .then(() => {
-      alert('Event link copied to clipboard!');
-    })
-    .catch(err => {
-      console.error('Error copying event link:', err);
-    });
-};
-
-
-    const formatTime = (timestamp) => {
-        if (timestamp && timestamp.seconds) {
-            return format(new Date(timestamp.seconds * 1000), 'dd/MM/yyyy HH:mm');
-        }
-        return 'Invalid time';
-    };
-const handleDownloadQR = async (url, eventName) => {
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Failed to fetch image');
-    
-    const blob = await response.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = `QR_${eventName}.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(downloadUrl);
+    await deleteDoc(doc(db, 'LeadCapture', eventId));
+    setEvents(prev => prev.filter(event => event.id !== eventId));
+    alert('Event deleted successfully!');
   } catch (error) {
-    console.error('Error downloading QR code:', error);
-    alert('Could not download QR code. Please check the link.');
+    console.error(error);
+    setError('Error deleting event.');
   }
 };
 
-    return (
-        <>
-          {loading && <div className='loader'> <span className="loader2"></span> </div>}
-            <section className='c-userslist box'>
-                <h2>Events Listing</h2>
-                <button className="m-button-5" onClick={() => window.history.back()}>
-                    Back
-                </button>
-                <table className='table-class'>
-                  
-                    {error && <p style={{ color: 'red' }}>{error}</p>}
-                    
-                    {/* Event Table */}
-                    <thead>
-                        <tr>
-                            <th>Sr no</th>
-                            <th>Event Name</th>
-                            <th>Time</th>
-                           
-                            <th>Copy Event Link</th> 
-                            <th>QR Code</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                 <tbody>
-  {events.map((event, index) => (
-    <tr key={event.id}>
-      <td>{index + 1}</td>
-      <td>{event.name}</td>
-      <td>{formatTime(event.startTime)}</td>
-      <td>
-        <button 
-          className="m-button-7" 
-          onClick={() => handleCopyEventLink(event.id)} 
-          style={{ marginLeft: '10px', backgroundColor: '#e2e2e2', color: 'black' }}
-        >
-          <FaRegCopy /> Copy
-        </button>
-      </td>
-    <td>
-  {event.qrCodeUrl ? (
-   <a
-  href={event.qrCodeUrl}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="m-button-7"
-  style={{ backgroundColor: '#16274f', color: 'white', textDecoration: 'none' }}
->
-  View QR
-</a>
 
+  const handleCopyEventLink = (eventId) => {
+    if (typeof window === "undefined") return;
 
-  ) : (
-    <span style={{ color: 'gray' }}>No QR</span>
-  )}
-</td>
+    const baseUrl = window.location.origin;
+    const eventLink = `${baseUrl}/events/${eventId}`;
 
-      <td style={{ padding: '10px', border: '1px solid #ddd' }}>
-        <div className="twobtn">
-          <button className="m-button-7" onClick={() => handleViewUsers(event.id)} style={{ marginLeft: '10px', backgroundColor: '#e2e2e2', color: 'black' }}><GrFormView />View</button>
-          <button className="m-button-7" onClick={() => handleEditEvent(event.id)} style={{ marginLeft: '10px', backgroundColor: '#f16f06', color: 'white' }}><CiEdit />Edit</button>
+    navigator.clipboard.writeText(eventLink)
+      .then(() => alert('Event link copied!'))
+      .catch(err => console.error(err));
+  };
+
+  const formatTime = (timestamp) => {
+    if (timestamp?.seconds) {
+      return format(new Date(timestamp.seconds * 1000), 'dd/MM/yyyy HH:mm');
+    }
+    return '-';
+  };
+
+  const getStatus = (endTime) => {
+    if (!endTime?.seconds) return 'Unknown';
+    return endTime.seconds * 1000 > Date.now() ? 'Active' : 'Expired';
+  };
+
+  const baseBtnStyle = {
+    padding: '8px 16px',
+    borderRadius: '25px',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginRight: '8px'
+  };
+
+  return (
+    <>
+      {loading && (
+        <div className='loader'>
+          <span className="loader2"></span>
         </div>
-      </td>
-    </tr>
-  ))}
-</tbody>
+      )}
 
-                </table>
-            </section>
-        </>
-    );
+      <section className='c-userslist box'>
+        <h2>Events Listing</h2>
+
+        {error && <p style={{ color: 'red' }}>{error}</p>}
+
+        <table className='table-class'>
+          <thead>
+            <tr>
+              <th>Sr No</th>
+              <th>Builder Name</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Status</th>
+              <th>Copy</th>
+              <th>QR</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {events.map((event, index) => (
+              <tr key={event.id}>
+                <td>{index + 1}</td>
+                <td>{event.builder || event.name}</td>
+                <td>{formatTime(event.startTime)}</td>
+                <td>{formatTime(event.endTime)}</td>
+
+                <td>
+                  <span style={{
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    backgroundColor:
+                      getStatus(event.endTime) === 'Active'
+                        ? '#d4edda'
+                        : '#f8d7da',
+                    color:
+                      getStatus(event.endTime) === 'Active'
+                        ? '#155724'
+                        : '#721c24'
+                  }}>
+                    {getStatus(event.endTime)}
+                  </span>
+                </td>
+
+                <td>
+                  <button
+                    onClick={() => handleCopyEventLink(event.id)}
+                    style={{
+                      ...baseBtnStyle,
+                      backgroundColor: '#e3f2fd',
+                      color: '#1565c0'
+                    }}
+                  >
+                    <FaRegCopy /> Copy
+                  </button>
+                </td>
+
+                <td>
+                  {event.qrCodeUrl ? (
+                    <a
+                      href={event.qrCodeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        ...baseBtnStyle,
+                        backgroundColor: '#e0f2f1',
+                        color: '#00695c',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      View QR
+                    </a>
+                  ) : (
+                    <span style={{ color: 'gray' }}>No QR</span>
+                  )}
+                </td>
+
+                <td>
+                  <button
+                    onClick={() => handleViewUsers(event.id)}
+                    style={{
+                      ...baseBtnStyle,
+                      backgroundColor: '#e8eaf6',
+                      color: '#3949ab'
+                    }}
+                  >
+                    <GrFormView /> View
+                  </button>
+
+                  <button
+                    onClick={() => handleEditEvent(event.id)}
+                    style={{
+                      ...baseBtnStyle,
+                      backgroundColor: '#fff3e0',
+                      color: '#ef6c00'
+                    }}
+                  >
+                    <CiEdit /> Edit
+                  </button>
+
+                <button
+  onClick={() => handleDeleteEvent(event.id, event.builder || event.name)}
+
+                    style={{
+                      ...baseBtnStyle,
+                      backgroundColor: '#ffebee',
+                      color: '#c62828'
+                    }}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    </>
+  );
 };
 
 export default ManageEvents;
