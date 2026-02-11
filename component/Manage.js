@@ -6,6 +6,7 @@ import { FaRegCopy } from "react-icons/fa6";
 import { useRouter } from 'next/router';
 import { CiEdit } from "react-icons/ci";
 import { GrFormView } from "react-icons/gr";
+import QRCode from 'qrcode';
 
 const ManageEvents = () => {
   const router = useRouter();
@@ -41,33 +42,55 @@ const ManageEvents = () => {
   const handleEditEvent = (eventId) => {
     router.push(`/admin/event/edit/${eventId}`);
   };
-const handleDeleteEvent = async (eventId, eventName) => {
-  const confirmDelete = window.confirm(
-    `Are you sure you want to delete "${eventName}"?\n\nThis action cannot be undone.`
-  );
 
-  if (!confirmDelete) return;
+  const handleDeleteEvent = async (eventId, eventName) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${eventName}"?\n\nThis action cannot be undone.`
+    );
 
-  try {
-    await deleteDoc(doc(db, 'LeadCapture', eventId));
-    setEvents(prev => prev.filter(event => event.id !== eventId));
-    alert('Event deleted successfully!');
-  } catch (error) {
-    console.error(error);
-    setError('Error deleting event.');
-  }
-};
+    if (!confirmDelete) return;
 
+    try {
+      await deleteDoc(doc(db, 'LeadCapture', eventId));
+      setEvents(prev => prev.filter(event => event.id !== eventId));
+      alert('Event deleted successfully!');
+    } catch (error) {
+      console.error(error);
+      setError('Error deleting event.');
+    }
+  };
 
   const handleCopyEventLink = (eventId) => {
     if (typeof window === "undefined") return;
 
-    const baseUrl = window.location.origin;
-    const eventLink = `${baseUrl}/events/${eventId}`;
+    const eventLink = `${window.location.origin}/events/${eventId}`;
 
     navigator.clipboard.writeText(eventLink)
       .then(() => alert('Event link copied!'))
       .catch(err => console.error(err));
+  };
+
+  const handleViewQR = async (eventId) => {
+    if (typeof window === "undefined") return;
+
+    const eventLink = `${window.location.origin}/events/${eventId}`;
+    const qrDataUrl = await QRCode.toDataURL(eventLink);
+
+    const newWindow = window.open();
+    newWindow.document.write(`
+      <html>
+        <head>
+          <title>QR Code</title>
+        </head>
+        <body style="display:flex;justify-content:center;align-items:center;height:100vh;background:#f5f5f5;">
+          <div style="text-align:center">
+            <h3>Scan QR Code</h3>
+            <img src="${qrDataUrl}" />
+            <p style="margin-top:10px;">${eventLink}</p>
+          </div>
+        </body>
+      </html>
+    `);
   };
 
   const formatTime = (timestamp) => {
@@ -163,23 +186,16 @@ const handleDeleteEvent = async (eventId, eventName) => {
                 </td>
 
                 <td>
-                  {event.qrCodeUrl ? (
-                    <a
-                      href={event.qrCodeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        ...baseBtnStyle,
-                        backgroundColor: '#e0f2f1',
-                        color: '#00695c',
-                        textDecoration: 'none'
-                      }}
-                    >
-                      View QR
-                    </a>
-                  ) : (
-                    <span style={{ color: 'gray' }}>No QR</span>
-                  )}
+                  <button
+                    onClick={() => handleViewQR(event.id)}
+                    style={{
+                      ...baseBtnStyle,
+                      backgroundColor: '#e0f2f1',
+                      color: '#00695c'
+                    }}
+                  >
+                    View QR
+                  </button>
                 </td>
 
                 <td>
@@ -205,9 +221,8 @@ const handleDeleteEvent = async (eventId, eventName) => {
                     <CiEdit /> Edit
                   </button>
 
-                <button
-  onClick={() => handleDeleteEvent(event.id, event.builder || event.name)}
-
+                  <button
+                    onClick={() => handleDeleteEvent(event.id, event.builder || event.name)}
                     style={{
                       ...baseBtnStyle,
                       backgroundColor: '#ffebee',
