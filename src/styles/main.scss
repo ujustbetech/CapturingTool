@@ -2060,7 +2060,8 @@ body {
 
 .feedbackContainer {
   color: #fff;
-  background: #CCC;
+ background: url('/space.jpeg') no-repeat center center;
+  background-size: cover;
   width: 100%;
   min-height: 100vh;
   background-size: cover;
@@ -2101,15 +2102,13 @@ body {
 }
 
 .client_logo {
-  width: 100%;
-  display: flex;
-  /* margin-bottom: 20px; */
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  /* padding: 0 2rem; */
-  box-sizing: border-box;
-  /* max-width: 250px; */
+      box-sizing: border-box;
+    flex-direction: column-reverse;
+    /* justify-content: space-between; */
+    align-items: center;
+    width: 100%;
+    display: flex;
+
 }
 
 .client_logo img{
@@ -2117,9 +2116,6 @@ body {
 }
 
 
-.feedback_logo img {
-  width: 80px;
-}
 
 img.sirenlogo {
   width: 120px;
@@ -2220,7 +2216,7 @@ img.sirenlogo {
   font-size: 1.2rem;
   font-weight: bold;
   color: #fff;
-  background-color: red;
+  background-color: #f16f06;
   border: none;
   border-radius: 8px;
   cursor: pointer;
