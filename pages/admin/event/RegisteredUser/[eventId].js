@@ -3,7 +3,7 @@ import { db } from '../../../../firebaseConfig';
 import { collection, getDocs, doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { useRouter } from 'next/router';
 import Layout from '../../../../component/Layout';
-import "../../../../src/app/styles/main.scss";
+
 import axios from 'axios';
 import ExportToExcel from '../../../admin/ExporttoExcel';
 

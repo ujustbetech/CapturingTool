@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { db } from '../../firebaseConfig';
 import axios from 'axios';
 import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
-import '../feedback.css';
+
 
 const EventLoginPage = () => {
   const router = useRouter();

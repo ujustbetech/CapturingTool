@@ -3,7 +3,7 @@ import { db } from '../../../../firebaseConfig';
 import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useRouter } from 'next/router';
 import Layout from '../../../../component/Layout';
-import "../../../../src/app/styles/main.scss";
+
 
 const EditEvent = () => {
   const router = useRouter();
