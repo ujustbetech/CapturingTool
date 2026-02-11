@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { db } from '../../firebaseConfig';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 
 const ExportToExcel = ({ eventId }) => {
@@ -16,8 +16,19 @@ const ExportToExcel = ({ eventId }) => {
         return;
       }
 
-      // Reference to the registeredUsers subcollection for the event
-      const registeredUsersCollection = collection(db, `OREMeet/${eventId}/registeredUsers`);
+      // ✅ Get event name (for file naming)
+      const eventRef = doc(db, 'LeadCapture', eventId);
+      const eventSnap = await getDoc(eventRef);
+      const eventName = eventSnap.exists()
+        ? eventSnap.data().name || 'Event'
+        : 'Event';
+
+      // ✅ Correct collection path
+      const registeredUsersCollection = collection(
+        db,
+        `LeadCapture/${eventId}/registeredUsers`
+      );
+
       const snapshot = await getDocs(registeredUsersCollection);
 
       if (snapshot.empty) {
@@ -26,37 +37,39 @@ const ExportToExcel = ({ eventId }) => {
         return;
       }
 
-      // Prepare data for export
-      const data = snapshot.docs.map((doc, index) => {
-        const d = doc.data();
+      // ✅ Prepare data for Excel
+      const data = snapshot.docs.map((docSnap, index) => {
+        const d = docSnap.data();
 
         return {
           SrNo: index + 1,
           Name: d.name || '',
           PhoneNumber: d.phoneNumber || '',
-          RegisteredAt: d.registeredAt ? d.registeredAt.toDate().toLocaleString() : '',
-          SelectedProducts: Array.isArray(d.selectedProducts) ? d.selectedProducts.join(', ') : '',
+          FlatNo: d.flatNo || '',
+          Wing: d.wing || '',
+          Builder: d.builder || '',
+          RegisteredAt: d.registeredAt
+            ? d.registeredAt.toDate().toLocaleString()
+            : '',
         };
       });
 
-      if (data.length === 0) {
-        alert('No user details available for export.');
-        setLoading(false);
-        return;
-      }
-
-      // Create worksheet and workbook
+      // ✅ Create worksheet
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Registered Users');
 
-      // Write to file
-      XLSX.writeFile(workbook, 'Registered_Users.xlsx');
+      // ✅ Dynamic file name
+      const today = new Date().toISOString().slice(0, 10);
+      const fileName = `${eventName.replace(/\s+/g, '_')}_${today}.xlsx`;
+
+      XLSX.writeFile(workbook, fileName);
 
       alert('Data exported successfully!');
+
     } catch (error) {
-      console.error('Error fetching data from Firestore:', error);
-      alert('An error occurred while fetching data. Please try again.');
+      console.error('Error fetching data:', error);
+      alert('An error occurred while exporting data.');
     } finally {
       setLoading(false);
     }
@@ -64,7 +77,11 @@ const ExportToExcel = ({ eventId }) => {
 
   return (
     <div>
-      <button className="m-button-7" onClick={fetchDataAndExport} disabled={loading}>
+      <button
+        className="m-button-7"
+        onClick={fetchDataAndExport}
+        disabled={loading}
+      >
         {loading ? 'Exporting...' : 'Download XLS'}
       </button>
     </div>

@@ -51,14 +51,21 @@ const ManageEvents = () => {
         }
     };
 
-    const handleCopyEventLink = (eventId) => {
-        const eventLink = `https://lead-capturing-tool.vercel.app/events/${eventId}`;
-        navigator.clipboard.writeText(eventLink).then(() => {
-            alert('Event link copied to clipboard!');
-        }).catch(err => {
-            console.error('Error copying event link:', err);
-        });
-    };
+   const handleCopyEventLink = (eventId) => {
+  if (typeof window === "undefined") return;
+
+  const baseUrl = window.location.origin; 
+  const eventLink = `${baseUrl}/events/${eventId}`;
+
+  navigator.clipboard.writeText(eventLink)
+    .then(() => {
+      alert('Event link copied to clipboard!');
+    })
+    .catch(err => {
+      console.error('Error copying event link:', err);
+    });
+};
+
 
     const formatTime = (timestamp) => {
         if (timestamp && timestamp.seconds) {

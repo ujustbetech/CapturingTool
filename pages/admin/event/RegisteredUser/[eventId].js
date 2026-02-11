@@ -15,30 +15,27 @@ const RegisteredUsers = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const [availableProducts, setAvailableProducts] = useState([]);
-
   // ✅ Admin form state
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [flatNo, setFlatNo] = useState('');
   const [wing, setWing] = useState('');
-  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectedBuilder, setSelectedBuilder] = useState('');
   const [eventName, setEventName] = useState('');
 
   useEffect(() => {
     if (!eventId) return;
 
-    const fetchEventProducts = async () => {
+    const fetchEventDetails = async () => {
       try {
         const eventRef = doc(db, 'LeadCapture', eventId);
         const eventSnap = await getDoc(eventRef);
         if (eventSnap.exists()) {
           const data = eventSnap.data();
-          setAvailableProducts(Array.isArray(data.productList) ? data.productList : []);
           setEventName(data.name || 'LeadCapture');
         }
       } catch (err) {
-        console.error('Error fetching event products:', err);
+        console.error('Error fetching event:', err);
       }
     };
 
@@ -47,16 +44,16 @@ const RegisteredUsers = () => {
         const registeredUsersCollection = collection(db, `LeadCapture/${eventId}/registeredUsers`);
         const snapshot = await getDocs(registeredUsersCollection);
 
-        const users = snapshot.docs.map((doc, index) => {
-          const data = doc.data();
+        const users = snapshot.docs.map((docSnap, index) => {
+          const data = docSnap.data();
           return {
-            id: doc.id,
+            id: docSnap.id,
             srNo: index + 1,
             name: data.name || 'N/A',
             phoneNumber: data.phoneNumber || 'N/A',
             flatNo: data.flatNo || 'N/A',
             wing: data.wing || 'N/A',
-            selectedProducts: Array.isArray(data.selectedProducts) ? data.selectedProducts : [],
+            builder: data.builder || 'N/A',
             registeredAt: data.registeredAt?.toDate().toLocaleString() || 'N/A',
           };
         });
@@ -68,25 +65,17 @@ const RegisteredUsers = () => {
       }
     };
 
-    fetchEventProducts();
+    fetchEventDetails();
     fetchRegisteredUsers();
   }, [eventId, success]);
-
-  const handleProductChange = (product) => {
-    setSelectedProducts((prev) =>
-      prev.includes(product)
-        ? prev.filter((p) => p !== product)
-        : [...prev, product]
-    );
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (!name || !phoneNumber || !flatNo || !wing || selectedProducts.length === 0) {
-      setError('Please fill all fields and select at least one product.');
+    if (!name || !phoneNumber || !flatNo || !wing || !selectedBuilder) {
+      setError('Please fill all fields and select a builder.');
       return;
     }
 
@@ -99,7 +88,7 @@ const RegisteredUsers = () => {
         phoneNumber,
         flatNo,
         wing,
-        selectedProducts,
+        builder: selectedBuilder,
         registeredAt: Timestamp.now(),
       });
 
@@ -109,9 +98,9 @@ const RegisteredUsers = () => {
       setPhoneNumber('');
       setFlatNo('');
       setWing('');
-      setSelectedProducts([]);
+      setSelectedBuilder('');
 
-      // ✅ WhatsApp Message
+      // ✅ WhatsApp Template
       await axios.post(
         `https://graph.facebook.com/v19.0/712485631939049/messages`,
         {
@@ -127,7 +116,7 @@ const RegisteredUsers = () => {
                 parameters: [
                   { type: "text", text: name },
                   { type: "text", text: eventName || "LeadCapture" },
-                  { type: "text", text: selectedProducts.join(', ') || "None" }
+                  { type: "text", text: selectedBuilder }
                 ]
               }
             ]
@@ -186,22 +175,22 @@ const RegisteredUsers = () => {
               </li>
 
               <li className='form-row'>
-                <h4>Select Products *</h4>
-
-                {availableProducts.length > 0 ? (
-                  availableProducts.map((product) => (
-                    <label key={product} style={{ marginRight: '10px' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedProducts.includes(product)}
-                        onChange={() => handleProductChange(product)}
-                      />
-                      {product}
-                    </label>
-                  ))
-                ) : (
-                  <p>No products available.</p>
-                )}
+                <h4>Select Builder *</h4>
+                <select
+                  value={selectedBuilder}
+                  onChange={(e) => setSelectedBuilder(e.target.value)}
+                  required
+                >
+                  <option value="">-- Select Builder --</option>
+                  <option value="Lloyds Realty Developers Ltd">Lloyds Realty Developers Ltd</option>
+                  <option value="JE & VEE Infrastructure">JE & VEE Infrastructure</option>
+                  <option value="Navish Realty">Navish Realty</option>
+                  <option value="Right Channel Constructions">Right Channel Constructions</option>
+                  <option value="Shree Naman Developers Pvt Ltd">Shree Naman Developers Pvt Ltd</option>
+                  <option value="Sahakar Global Ltd">Sahakar Global Ltd</option>
+                  <option value="Evershine Builders Pvt Ltd">Evershine Builders Pvt Ltd</option>
+                  <option value="Ashwin Sheth Group">Ashwin Sheth Group</option>
+                </select>
               </li>
 
               <li className='form-row'>
@@ -221,7 +210,7 @@ const RegisteredUsers = () => {
               <th>Phone Number</th>
               <th>Flat No</th>
               <th>Wing</th>
-              <th>Selected Products</th>
+              <th>Builder</th>
               <th>Registered At</th>
             </tr>
           </thead>
@@ -235,7 +224,7 @@ const RegisteredUsers = () => {
                   <td>{user.phoneNumber}</td>
                   <td>{user.flatNo}</td>
                   <td>{user.wing}</td>
-                  <td>{user.selectedProducts.join(', ') || 'N/A'}</td>
+                  <td>{user.builder}</td>
                   <td>{user.registeredAt}</td>
                 </tr>
               ))

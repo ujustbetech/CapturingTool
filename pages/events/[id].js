@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { db } from '../../firebaseConfig';
 import axios from 'axios';
-
 import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
 import '../feedback.css';
 
@@ -12,18 +11,18 @@ const EventLoginPage = () => {
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [userName, setUserName] = useState('');
-  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectedBuilder, setSelectedBuilder] = useState('');
   const [eventDetails, setEventDetails] = useState(null);
   const [registeredUserCount, setRegisteredUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // ✅ New fields
   const [flatNo, setFlatNo] = useState('');
   const [wing, setWing] = useState('');
 
-  const isEventEnded = eventDetails?.endTime?.seconds * 1000 < Date.now();
+  const isEventEnded =
+    eventDetails?.endTime?.seconds * 1000 < Date.now();
 
   useEffect(() => {
     if (id) {
@@ -42,17 +41,14 @@ const EventLoginPage = () => {
   };
 
   const fetchRegisteredUserCount = async () => {
-    const registeredUsersRef = collection(db, 'LeadCapture', id, 'registeredUsers');
+    const registeredUsersRef = collection(
+      db,
+      'LeadCapture',
+      id,
+      'registeredUsers'
+    );
     const snapshot = await getDocs(registeredUsersRef);
     setRegisteredUserCount(snapshot.size);
-  };
-
-  const handleProductSelection = (product) => {
-    setSelectedProducts(prev =>
-      prev.includes(product)
-        ? prev.filter(p => p !== product)
-        : [...prev, product]
-    );
   };
 
   const handleSubmit = async (e) => {
@@ -60,35 +56,40 @@ const EventLoginPage = () => {
     setError('');
     setSuccess('');
 
-    if (!userName || !phoneNumber || !flatNo || !wing || selectedProducts.length === 0) {
-      setError('Please fill all fields and select at least one product.');
+    if (!userName || !phoneNumber || !flatNo || !wing || !selectedBuilder) {
+      setError('Please fill all fields and select a builder.');
       return;
     }
 
     try {
-      const userRef = doc(db, 'LeadCapture', id, 'registeredUsers', phoneNumber);
+      const userRef = doc(
+        db,
+        'LeadCapture',
+        id,
+        'registeredUsers',
+        phoneNumber
+      );
 
       await setDoc(userRef, {
         name: userName,
         phoneNumber,
         flatNo,
         wing,
-        selectedProducts,
+        builder: selectedBuilder,
         registeredAt: new Date(),
       });
 
       setSuccess('Thank you! Your response has been recorded.');
 
-      // Reset fields
       setUserName('');
       setPhoneNumber('');
       setFlatNo('');
       setWing('');
-      setSelectedProducts([]);
+      setSelectedBuilder('');
 
       fetchRegisteredUserCount();
 
-      // ✅ Send WhatsApp message
+      // ✅ WhatsApp Template Message
       await axios.post(
         `https://graph.facebook.com/v19.0/712485631939049/messages`,
         {
@@ -104,7 +105,7 @@ const EventLoginPage = () => {
                 parameters: [
                   { type: "text", text: userName },
                   { type: "text", text: eventDetails?.name || "the event" },
-                  { type: "text", text: selectedProducts.join(', ') || "None" }
+                  { type: "text", text: selectedBuilder }
                 ]
               }
             ]
@@ -128,7 +129,7 @@ const EventLoginPage = () => {
     <section className="feedbackContainer">
       <div className="feedback-form-container">
         <div className="client_logo">
-          <img src="/mantra_logo.png" alt="Logo" />
+          <img src="/ujustlogo.png" alt="Logo" />
         </div>
 
         <h2 className="feedback-form-title">
@@ -159,7 +160,6 @@ const EventLoginPage = () => {
             />
           </div>
 
-          {/* ✅ Flat No Field */}
           <div className="input-group">
             <label>Flat No</label>
             <input
@@ -171,7 +171,6 @@ const EventLoginPage = () => {
             />
           </div>
 
-          {/* ✅ Wing Field */}
           <div className="input-group">
             <label>Wing</label>
             <input
@@ -183,30 +182,32 @@ const EventLoginPage = () => {
             />
           </div>
 
+          {/* ✅ Builder Dropdown */}
           <div className="input-group">
-            <label>Select Products</label>
-            <div className="checkbox-group">
-              {eventDetails?.productList?.length > 0 ? (
-                eventDetails.productList.map((product, idx) => (
-                  <div className="checkbox-item" key={idx}>
-                    <input
-                      type="checkbox"
-                      id={`product-${idx}`}
-                      value={product}
-                      checked={selectedProducts.includes(product)}
-                      onChange={() => handleProductSelection(product)}
-                      disabled={isEventEnded}
-                    />
-                    <label htmlFor={`product-${idx}`}>{product}</label>
-                  </div>
-                ))
-              ) : (
-                <p>No products listed for this event.</p>
-              )}
-            </div>
+            <label>Select Builder</label>
+            <select
+              value={selectedBuilder}
+              onChange={(e) => setSelectedBuilder(e.target.value)}
+              disabled={isEventEnded}
+              required
+            >
+              <option value="">-- Select Builder --</option>
+              <option value="Lloyds Realty Developers Ltd">Lloyds Realty Developers Ltd</option>
+              <option value="JE & VEE Infrastructure">JE & VEE Infrastructure</option>
+              <option value="Navish Realty">Navish Realty</option>
+              <option value="Right Channel Constructions">Right Channel Constructions</option>
+              <option value="Shree Naman Developers Pvt Ltd">Shree Naman Developers Pvt Ltd</option>
+              <option value="Sahakar Global Ltd">Sahakar Global Ltd</option>
+              <option value="Evershine Builders Pvt Ltd">Evershine Builders Pvt Ltd</option>
+              <option value="Ashwin Sheth Group">Ashwin Sheth Group</option>
+            </select>
           </div>
 
-          <button className="submitbtns" type="submit" disabled={isEventEnded}>
+          <button
+            className="submitbtns"
+            type="submit"
+            disabled={isEventEnded}
+          >
             Submit
           </button>
 
@@ -215,8 +216,10 @@ const EventLoginPage = () => {
               Registration is closed. The event has ended.
             </p>
           )}
+
           {error && <p style={{ color: 'red' }}>{error}</p>}
           {success && <p style={{ color: 'green' }}>{success}</p>}
+
         </form>
       </div>
     </section>
