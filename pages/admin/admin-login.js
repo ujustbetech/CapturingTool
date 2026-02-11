@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebaseConfig'; 
-import styles from '../../src/app/styles/AdminLogin.module.css';
+
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
