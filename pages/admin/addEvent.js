@@ -1,7 +1,7 @@
 import React from 'react'
 import Admin from '../../component/Admin'
 import Layout from '../../component/Layout'
-import "../../src/styles/main.scss";
+
 
 
 const AddEvent = () => {
