@@ -1,25 +1,37 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { db } from '../../firebaseConfig';
-import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
-import { format } from 'date-fns';
-import Swal from 'sweetalert2';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import { db } from "../../firebaseConfig";
+import {
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  setDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { format } from "date-fns";
+import Swal from "sweetalert2";
 
 const EventLoginPage = () => {
   const router = useRouter();
   const { id } = router.query;
 
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [userName, setUserName] = useState('');
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    flatNo: "",
+    wing: "",
+  });
+
+  const [errors, setErrors] = useState({});
   const [eventDetails, setEventDetails] = useState(null);
   const [registeredUserCount, setRegisteredUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [flatNo, setFlatNo] = useState('');
-  const [wing, setWing] = useState('');
 
   const isEventEnded =
-    eventDetails?.endTime?.seconds * 1000 < Date.now();
+    eventDetails?.endTime?.seconds
+      ? eventDetails.endTime.seconds * 1000 < Date.now()
+      : false;
 
   useEffect(() => {
     if (id) {
@@ -29,7 +41,7 @@ const EventLoginPage = () => {
   }, [id]);
 
   const fetchEventDetails = async () => {
-    const eventRef = doc(db, 'LeadCapture', id);
+    const eventRef = doc(db, "LeadCapture", id);
     const eventDoc = await getDoc(eventRef);
     if (eventDoc.exists()) {
       setEventDetails(eventDoc.data());
@@ -40,223 +52,230 @@ const EventLoginPage = () => {
   const fetchRegisteredUserCount = async () => {
     const registeredUsersRef = collection(
       db,
-      'LeadCapture',
+      "LeadCapture",
       id,
-      'registeredUsers'
+      "registeredUsers"
     );
     const snapshot = await getDocs(registeredUsersRef);
     setRegisteredUserCount(snapshot.size);
   };
 
+  // ---------------- VALIDATION ----------------
+
+  const validateField = (name, value) => {
+    let message = "";
+
+    if (name === "name" && !value.trim())
+      message = "Full name is required";
+
+    if (name === "phone") {
+      if (!value) message = "Phone number is required";
+      else if (!/^[0-9]{10}$/.test(value))
+        message = "Enter valid 10 digit phone number";
+    }
+
+    if (name === "flatNo" && !value.trim())
+      message = "Flat number is required";
+
+    if (name === "wing" && !value.trim())
+      message = "Wing is required";
+
+    setErrors((prev) => ({ ...prev, [name]: message }));
+    return message === "";
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    validateField(name, value);
+  };
+
+  const validateForm = () => {
+    const results = [
+      validateField("name", formData.name),
+      validateField("phone", formData.phone),
+      validateField("flatNo", formData.flatNo),
+      validateField("wing", formData.wing),
+    ];
+
+    return results.every((item) => item === true);
+  };
+
+  // ---------------- SUBMIT ----------------
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
-    if (!userName.trim()) {
-      setError('Please enter your full name.');
-      return;
-    }
-
-    if (!/^[0-9]{10}$/.test(phoneNumber)) {
-      setError('Please enter valid 10 digit phone number.');
-      return;
-    }
-
-    if (!flatNo.trim()) {
-      setError('Please enter flat number.');
-      return;
-    }
-
-    if (!wing.trim()) {
-      setError('Please enter wing.');
-      return;
-    }
-
-    if (!eventDetails?.builder) {
-      setError('Event builder not found.');
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       const userRef = doc(
         db,
-        'LeadCapture',
+        "LeadCapture",
         id,
-        'registeredUsers',
-        phoneNumber
+        "registeredUsers",
+        formData.phone
       );
 
+      const existingUser = await getDoc(userRef);
+
+      if (existingUser.exists()) {
+        Swal.fire({
+          icon: "info",
+          title: "Already Registered",
+          text: "This phone number is already registered.",
+          confirmButtonColor: "#16274f",
+        });
+        return;
+      }
+
       await setDoc(userRef, {
-        name: userName,
-        phoneNumber,
-        flatNo,
-        wing,
-        builder: eventDetails.builder,
-        registeredAt: new Date(),
+        name: formData.name,
+        phoneNumber: formData.phone,
+        flatNo: formData.flatNo,
+        wing: formData.wing,
+        builder: eventDetails?.builder || "",
+        registeredAt: serverTimestamp(),
       });
 
       Swal.fire({
-        icon: 'success',
-        title: 'Thank You!',
-        text: 'Thank you for registering.',
-        confirmButtonColor: '#16274f',
-        confirmButtonText: 'OK'
+        icon: "success",
+        title: "Registration Successful!",
+        confirmButtonColor: "#16274f",
       });
 
-      setUserName('');
-      setPhoneNumber('');
-      setFlatNo('');
-      setWing('');
+      setFormData({
+        name: "",
+        phone: "",
+        flatNo: "",
+        wing: "",
+      });
 
+      setErrors({});
       fetchRegisteredUserCount();
 
     } catch (err) {
-      console.error(err);
-
       Swal.fire({
-        icon: 'error',
-        title: 'Oops...',
-        text: 'Something went wrong. Please try again.',
-        confirmButtonColor: '#c62828'
+        icon: "error",
+        title: "Error",
+        text: "Something went wrong.",
       });
     }
   };
 
+  if (loading) return <div style={{ padding: 50 }}>Loading...</div>;
+
   const formattedDate = eventDetails?.startTime?.seconds
     ? format(
         new Date(eventDetails.startTime.seconds * 1000),
-        'EEEE, dd/MM/yy'
+        "EEEE, dd/MM/yy"
       )
-    : '';
-
-  const formattedStartTime = eventDetails?.startTime?.seconds
-    ? format(
-        new Date(eventDetails.startTime.seconds * 1000),
-        'hh:mm a'
-      )
-    : '';
-
-  const formattedEndTime = eventDetails?.endTime?.seconds
-    ? format(
-        new Date(eventDetails.endTime.seconds * 1000),
-        'hh:mm a'
-      )
-    : '';
+    : "";
 
   return (
     <section className="feedbackContainer">
       <div className="feedback-form-container">
-        <div className="client_logo">
-          <img src="/ujustlogo.png" alt="Logo" />
-        </div>
+
+  
 
         <h2 className="feedback-form-title">
-          {eventDetails?.name || 'Event'}
+          {eventDetails?.name || "Event"}
         </h2>
 
-{formattedDate && (
-  <div style={{
-    textAlign: 'center',
-    marginBottom: '25px',
-    padding: '15px 20px',
-    borderRadius: '12px',
-    background: 'linear-gradient(135deg, #f8f9ff, #eef2ff)',
-    border: '1px solid #e0e6ff',
-    fontSize: '14px',
-    color: '#444',
-    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.05)'
-  }}>
-    <div style={{
-      fontWeight: '600',
-      fontSize: '15px',
-      color: '#16274f',
-      marginBottom: '4px'
-    }}>
-      {formattedDate}
-    </div>
+        {formattedDate && (
+          <div className="event-card">{formattedDate}</div>
+        )}
 
-    <div style={{
-      fontSize: '13px',
-      color: '#666',
-      letterSpacing: '0.5px'
-    }}>
-      {formattedStartTime} - {formattedEndTime}
-    </div>
-  </div>
-)}
+        <div className="count-badge">
+          {registeredUserCount} people registered
+        </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
 
+          {/* NAME */}
           <div className="input-group">
             <label>Full Name</label>
             <input
-              type="text"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              onBlur={handleBlur}
               disabled={isEventEnded}
-              required
+              className={errors.name ? "error-input" : ""}
             />
+            {errors.name && (
+              <span className="error-message">{errors.name}</span>
+            )}
           </div>
 
+          {/* PHONE */}
           <div className="input-group">
             <label>Contact Number</label>
             <input
-              type="text"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              name="phone"
+              maxLength="10"
+              value={formData.phone}
+              onChange={handleChange}
+              onBlur={handleBlur}
               disabled={isEventEnded}
-              required
+              className={errors.phone ? "error-input" : ""}
             />
+            {errors.phone && (
+              <span className="error-message">{errors.phone}</span>
+            )}
           </div>
 
+          {/* FLAT */}
           <div className="input-group">
             <label>Flat No</label>
             <input
-              type="text"
-              value={flatNo}
-              onChange={(e) => setFlatNo(e.target.value)}
+              name="flatNo"
+              value={formData.flatNo}
+              onChange={handleChange}
+              onBlur={handleBlur}
               disabled={isEventEnded}
-              required
+              className={errors.flatNo ? "error-input" : ""}
             />
+            {errors.flatNo && (
+              <span className="error-message">{errors.flatNo}</span>
+            )}
           </div>
 
+          {/* WING */}
           <div className="input-group">
             <label>Wing</label>
             <input
-              type="text"
-              value={wing}
-              onChange={(e) => setWing(e.target.value)}
+              name="wing"
+              value={formData.wing}
+              onChange={handleChange}
+              onBlur={handleBlur}
               disabled={isEventEnded}
-              required
+              className={errors.wing ? "error-input" : ""}
             />
+            {errors.wing && (
+              <span className="error-message">{errors.wing}</span>
+            )}
           </div>
 
           <div className="input-group">
             <label>Builder</label>
-            <input
-              type="text"
-              value={eventDetails?.builder || ''}
-              disabled
-            />
+            <input value={eventDetails?.builder || ""} disabled readOnly />
           </div>
 
-          <button
-            className="submitbtns"
-            type="submit"
-            disabled={isEventEnded}
-          >
-            Submit
+          <button className="submitbtns" disabled={isEventEnded}>
+            Submit Registration
           </button>
-
-          {isEventEnded && (
-            <p style={{ color: 'gray' }}>
-              Registration is closed. The event has ended.
-            </p>
-          )}
-
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-
+          
         </form>
+              <div className="logo-row">
+          <img src="/ujustlogo.png" alt="Logo1" />
+          <img src="/karuyaki.png" alt="Logo2" />
+          <img src="/connect.png" alt="Logo3" />
+        </div>
       </div>
     </section>
   );
