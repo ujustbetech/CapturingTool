@@ -2420,6 +2420,197 @@ img.sirenlogo {
   color: #16274f;
   margin-bottom: 20px;
 }
+/* ============================= */
+/* GLOBAL MOBILE FIXES */
+/* ============================= */
+
+html, body {
+  overflow-x: hidden;
+}
+
+/* ============================= */
+/* SIDEBAR RESPONSIVE */
+/* ============================= */
+
+@media (max-width: 768px) {
+
+  .m-navbar {
+    position: fixed;
+    left: -240px;
+    top: 0;
+    width: 240px !important;
+    height: 100vh;
+    transition: 0.3s ease;
+    z-index: 999;
+  }
+
+  .m-navbar.expand {
+    left: 0;
+  }
+
+  .maincontainer {
+    width: 100% !important;
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  .maincontainer.expand {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+/* ============================= */
+/* HEADER FIX */
+/* ============================= */
+
+@media (max-width: 768px) {
+
+  .admin-header {
+    padding: 10px 15px !important;
+  }
+
+  .admin-header .headerRight > div {
+    padding: 8px !important;
+    margin-left: 8px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ============================= */
+/* DASHBOARD CIRCLE FIX */
+/* ============================= */
+
+@media (max-width: 768px) {
+
+  .ShapeCircle2 {
+    width: 180px !important;
+    height: 180px !important;
+  }
+
+  .ShapeCircle2 h2 {
+    font-size: 60px !important;
+  }
+
+  .ShapeCircle2 h4 {
+    font-size: 18px !important;
+  }
+
+  .EvenName {
+    font-size: 26px !important;
+    text-align: center;
+  }
+}
+
+/* ============================= */
+/* FORM RESPONSIVE FIX */
+/* ============================= */
+
+@media (max-width: 768px) {
+
+  .c-form ul li {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    row-gap: 12px;
+  }
+
+  .c-form ul li h4 {
+    width: 100% !important;
+    font-size: 14px;
+  }
+
+  .c-form ul li > div {
+    width: 100% !important;
+  }
+
+  .c-form ul li .submitbtn,
+  .c-form ul li .resetbtn {
+    max-width: 100% !important;
+  }
+
+  .c-form ul li input,
+  .c-form ul li select,
+  .c-form ul li textarea {
+    width: 100% !important;
+  }
+}
+
+/* ============================= */
+/* TABLE RESPONSIVE FIX */
+/* ============================= */
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+
+  table {
+    min-width: 600px;
+  }
+
+  th, td {
+    font-size: 12px !important;
+    padding: 8px !important;
+  }
+}
+
+/* ============================= */
+/* BUTTON FIX */
+/* ============================= */
+
+@media (max-width: 768px) {
+
+  button {
+    font-size: 14px !important;
+    padding: 8px 14px !important;
+  }
+}
+
+/* ============================= */
+/* MODAL FIX */
+/* ============================= */
+
+@media (max-width: 768px) {
+
+  .modal {
+    width: 95% !important;
+    padding: 20px !important;
+  }
+
+  .feedback-modal {
+    width: 95% !important;
+  }
+}
+
+/* ============================= */
+/* DASHBOARD CONTAINER FIX */
+/* ============================= */
+
+@media (max-width: 768px) {
+
+  .dashboard-container {
+    padding: 10px !important;
+    text-align: center;
+  }
+}
+
+/* ============================= */
+/* SEARCH BAR FIX */
+/* ============================= */
+
+@media (max-width: 768px) {
+
+  .search {
+    width: 100% !important;
+  }
+
+  .searchTerm {
+    width: 100% !important;
+  }
+}
+
 
 .event-card {
   text-align: center;
