@@ -2383,4 +2383,157 @@ img.sirenlogo {
     font-size: 0.875rem;
     margin-bottom: 1rem;
   }
-  
+  .feedbackContainer {
+  min-height: 100vh;
+  background: url("/space.jpeg") center center / cover no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 25px 15px;
+}
+
+
+.feedback-form-container {
+  background: #ffffff;
+
+  border-radius: 22px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08);
+}
+
+.logo-row {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  margin-top: 30px;
+
+}
+
+.logo-row img {
+  height: 45px;
+  object-fit: contain;
+}
+
+.feedback-form-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: #16274f;
+  margin-bottom: 20px;
+}
+
+.event-card {
+  text-align: center;
+  margin-bottom: 25px;
+  padding: 18px;
+  color: #002752;
+  border-radius: 14px;
+  background: #f5f7ff;
+  border: 1px solid #dfe6ff;
+}
+
+.event-date {
+  font-weight: 600;
+  font-size: 15px;
+  color: #16274f;
+}
+
+.event-time {
+  font-size: 13px;
+  color: #666;
+}
+
+.count-badge {
+  text-align: center;
+  font-size: 14px;
+  margin-bottom: 20px;
+  color: #16274f;
+  font-weight: 500;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  font-size: 13px;
+  margin-bottom: 6px;
+  display: block;
+  color: #444;
+  font-weight: 500;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #e0e6ff;
+  font-size: 15px;
+  background: #fdfdff;
+  transition: 0.3s;
+  box-sizing: border-box;
+}
+
+.input-group input:focus {
+  border-color: #16274f;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(22, 39, 79, 0.08);
+}
+
+.submitbtns {
+  width: 100%;
+  padding: 15px;
+  border-radius: 14px;
+  border: none;
+  background: #16274f;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.3s;
+  margin-top: 10px;
+}
+
+.submitbtns:hover {
+  background: #0f1c38;
+  transform: translateY(-2px);
+}
+
+.submitbtns:active {
+  transform: scale(0.98);
+}
+
+.closed-text {
+  text-align: center;
+  margin-top: 15px;
+  color: gray;
+}
+
+.error-text {
+  text-align: center;
+  color: #c62828;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .feedback-form-container {
+    padding: 30px 20px;
+  }
+
+  .logo-row img {
+    height: 35px;
+  }
+}
+
+.error-input {
+  border: 1px solid #c62828 !important;
+  background: #fff5f5;
+}
+
+.error-message {
+  color: #c62828;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
