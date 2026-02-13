@@ -9,8 +9,16 @@ import {
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
 import { format } from "date-fns";
 import Swal from "sweetalert2";
+
+const storage = getStorage();
 
 const EventLoginPage = () => {
   const router = useRouter();
@@ -21,8 +29,10 @@ const EventLoginPage = () => {
     phone: "",
     flatNo: "",
     wing: "",
+    file: null,
   });
 
+  const [preview, setPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [eventDetails, setEventDetails] = useState(null);
   const [registeredUserCount, setRegisteredUserCount] = useState(0);
@@ -58,6 +68,38 @@ const EventLoginPage = () => {
     );
     const snapshot = await getDocs(registeredUsersRef);
     setRegisteredUserCount(snapshot.size);
+  };
+
+  // ---------------- FILE HANDLER ----------------
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "application/pdf",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      Swal.fire("Invalid File", "Only Image or PDF allowed", "error");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire("File too large", "Max size is 5MB", "error");
+      return;
+    }
+
+    setFormData((prev) => ({ ...prev, file }));
+
+    if (file.type.startsWith("image/")) {
+      setPreview(URL.createObjectURL(file));
+    } else {
+      setPreview(null);
+    }
   };
 
   // ---------------- VALIDATION ----------------
@@ -101,7 +143,6 @@ const EventLoginPage = () => {
       validateField("flatNo", formData.flatNo),
       validateField("wing", formData.wing),
     ];
-
     return results.every((item) => item === true);
   };
 
@@ -109,7 +150,6 @@ const EventLoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     try {
@@ -133,12 +173,25 @@ const EventLoginPage = () => {
         return;
       }
 
+      let fileURL = "";
+
+      if (formData.file) {
+        const fileRef = ref(
+          storage,
+          `LeadCapture/${id}/registeredUsers/${formData.phone}/${formData.file.name}`
+        );
+
+        await uploadBytes(fileRef, formData.file);
+        fileURL = await getDownloadURL(fileRef);
+      }
+
       await setDoc(userRef, {
         name: formData.name,
         phoneNumber: formData.phone,
         flatNo: formData.flatNo,
         wing: formData.wing,
         builder: eventDetails?.builder || "",
+        fileURL: fileURL,
         registeredAt: serverTimestamp(),
       });
 
@@ -153,8 +206,10 @@ const EventLoginPage = () => {
         phone: "",
         flatNo: "",
         wing: "",
+        file: null,
       });
 
+      setPreview(null);
       setErrors({});
       fetchRegisteredUserCount();
 
@@ -180,8 +235,6 @@ const EventLoginPage = () => {
     <section className="feedbackContainer">
       <div className="feedback-form-container">
 
-  
-
         <h2 className="feedback-form-title">
           {eventDetails?.name || "Event"}
         </h2>
@@ -196,7 +249,6 @@ const EventLoginPage = () => {
 
         <form onSubmit={handleSubmit} noValidate>
 
-          {/* NAME */}
           <div className="input-group">
             <label>Full Name</label>
             <input
@@ -212,7 +264,6 @@ const EventLoginPage = () => {
             )}
           </div>
 
-          {/* PHONE */}
           <div className="input-group">
             <label>Contact Number</label>
             <input
@@ -229,7 +280,6 @@ const EventLoginPage = () => {
             )}
           </div>
 
-          {/* FLAT */}
           <div className="input-group">
             <label>Flat No</label>
             <input
@@ -245,7 +295,6 @@ const EventLoginPage = () => {
             )}
           </div>
 
-          {/* WING */}
           <div className="input-group">
             <label>Wing</label>
             <input
@@ -261,6 +310,35 @@ const EventLoginPage = () => {
             )}
           </div>
 
+          {/* SINGLE UPLOAD FIELD */}
+          <div className="input-group">
+            <label>Upload Photo or PDF</label>
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              capture="user"
+              onChange={handleFileChange}
+              disabled={isEventEnded}
+            />
+          </div>
+
+          {preview && (
+            <div style={{ marginTop: 10 }}>
+              <img
+                src={preview}
+                alt="Preview"
+                style={{ width: 130, borderRadius: 10 }}
+              />
+            </div>
+          )}
+
+          {formData.file &&
+            formData.file.type === "application/pdf" && (
+              <div style={{ marginTop: 10 }}>
+                📄 Selected File: {formData.file.name}
+              </div>
+            )}
+
           <div className="input-group">
             <label>Builder</label>
             <input value={eventDetails?.builder || ""} disabled readOnly />
@@ -269,13 +347,15 @@ const EventLoginPage = () => {
           <button className="submitbtns" disabled={isEventEnded}>
             Submit Registration
           </button>
-          
+
         </form>
-              <div className="logo-row">
+
+        <div className="logo-row">
           <img src="/ujustlogo.png" alt="Logo1" />
           <img src="/karuyaki.png" alt="Logo2" />
           <img src="/connect.png" alt="Logo3" />
         </div>
+
       </div>
     </section>
   );
