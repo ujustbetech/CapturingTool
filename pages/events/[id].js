@@ -70,28 +70,11 @@ const EventLoginPage = () => {
     setRegisteredUserCount(snapshot.size);
   };
 
-  // ---------------- FILE HANDLER ----------------
+  // ---------------- FILE HANDLER (Simplified) ----------------
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/jpg",
-      "application/pdf",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      Swal.fire("Invalid File", "Only Image or PDF allowed", "error");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      Swal.fire("File too large", "Max size is 5MB", "error");
-      return;
-    }
 
     setFormData((prev) => ({ ...prev, file }));
 
