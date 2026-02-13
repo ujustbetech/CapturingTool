@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { db } from '../../../../firebaseConfig';
-import { collection, getDocs, doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  getDoc,
+  Timestamp,
+} from 'firebase/firestore';
 import { useRouter } from 'next/router';
 import Layout from '../../../../component/Layout';
 import ExportToExcel from '../../../admin/ExporttoExcel';
@@ -56,6 +63,7 @@ const RegisteredUsers = () => {
             flatNo: data.flatNo || 'N/A',
             wing: data.wing || 'N/A',
             builder: data.builder || 'N/A',
+            fileURL: data.fileURL || '',
             registeredAt:
               data.registeredAt?.toDate().toLocaleString() || 'N/A',
           };
@@ -77,7 +85,6 @@ const RegisteredUsers = () => {
     setError('');
     setSuccess('');
 
-    // ✅ Validation
     if (!name.trim()) {
       setError('Please enter name.');
       return;
@@ -117,7 +124,7 @@ const RegisteredUsers = () => {
         phoneNumber,
         flatNo,
         wing,
-        builder: eventBuilder,  // ✅ Auto builder
+        builder: eventBuilder,
         registeredAt: Timestamp.now(),
       });
 
@@ -138,11 +145,14 @@ const RegisteredUsers = () => {
     <Layout>
       <section className='c-userslist box'>
 
-        <div className="header-row" style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
+        <div
+          className="header-row"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
           <h3>{eventName}</h3>
           <ExportToExcel eventId={eventId} />
         </div>
@@ -150,7 +160,7 @@ const RegisteredUsers = () => {
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {success && <p style={{ color: 'green' }}>{success}</p>}
 
-        {/* ✅ Admin Add Form */}
+        {/* Admin Add Form */}
         <section className='c-form box'>
           <h2>Add New Lead</h2>
 
@@ -197,7 +207,6 @@ const RegisteredUsers = () => {
                 />
               </li>
 
-              {/* ✅ Auto Builder Display */}
               <li className='form-row'>
                 <h4>Builder</h4>
                 <input
@@ -217,7 +226,7 @@ const RegisteredUsers = () => {
           </form>
         </section>
 
-        {/* ✅ Registered Users Table */}
+        {/* Registered Users Table */}
         <table className='table-class' style={{ marginTop: '2rem' }}>
           <thead>
             <tr>
@@ -227,6 +236,7 @@ const RegisteredUsers = () => {
               <th>Flat No</th>
               <th>Wing</th>
               <th>Builder</th>
+              <th>Uploaded File</th>
               <th>Registered At</th>
             </tr>
           </thead>
@@ -241,12 +251,47 @@ const RegisteredUsers = () => {
                   <td>{user.flatNo}</td>
                   <td>{user.wing}</td>
                   <td>{user.builder}</td>
+
+                  <td>
+                    {user.fileURL ? (
+                      user.fileURL.includes('.pdf') ? (
+                        <a
+                          href={user.fileURL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#16274f', fontWeight: 600 }}
+                        >
+                          View PDF
+                        </a>
+                      ) : (
+                        <a
+                          href={user.fileURL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <img
+                            src={user.fileURL}
+                            alt="Uploaded"
+                            style={{
+                              width: '60px',
+                              height: '60px',
+                              objectFit: 'cover',
+                              borderRadius: '6px',
+                            }}
+                          />
+                        </a>
+                      )
+                    ) : (
+                      'No File'
+                    )}
+                  </td>
+
                   <td>{user.registeredAt}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="7">
+                <td colSpan="8">
                   No users registered for this event.
                 </td>
               </tr>
